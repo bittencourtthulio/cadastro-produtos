@@ -30,7 +30,7 @@ app.post('/api/products', (req, res) => {
   if (!name || price == null || stock == null) {
     return res.status(400).json({ error: 'name, price e stock são obrigatórios' });
   }
-  const product = { id: nextId++, name, price: price, stock: Number(stock) };
+  const product = { id: nextId++, name, price: Number(price), stock: Number(stock) };
   products.push(product);
   res.status(201).json(product);
 });
