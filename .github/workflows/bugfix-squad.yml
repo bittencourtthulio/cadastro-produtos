@@ -1,0 +1,97 @@
+name: Bug Fix Squad — Trigger on Label
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  trigger-bugfix-squad:
+    if: github.event.label.name == 'Bug'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Bug Fix Squad
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_BODY=$(echo '${{ toJson(github.event.issue.body) }}' | sed 's/^"//;s/"$//')
+          REPO_URL="${{ github.event.repository.html_url }}"
+          REPO_FULL_NAME="${{ github.event.repository.full_name }}"
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "squad": "bugfix-react-express",
+            "trigger": "github-issue-label",
+            "input": {
+              "bug_description": "Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}\n\n${ISSUE_BODY}",
+              "repo_url": "${REPO_URL}",
+              "repo_full_name": "${REPO_FULL_NAME}",
+              "issue_number": "${ISSUE_NUMBER}",
+              "issue_url": "${ISSUE_URL}",
+              "github_token": "${{ secrets.GITHUB_TOKEN }}"
+            }
+          }
+          EOF
+          )
+
+          HTTP_STATUS=$(curl -s -o /tmp/squad_response.json -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
+            -d "$PAYLOAD" \
+            http://187.127.4.249:3001/api/squads/run)
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response:"
+          cat /tmp/squad_response.json
+
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "::error::Falha ao acionar a squad. Status HTTP: $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Comment on Issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Bug Fix Squad Acionada
+
+            A squad **Bug Fix — React & Express** foi iniciada automaticamente para analisar e corrigir este bug.
+
+            **O que acontece agora:**
+            1. **Marcos Vieira** está analisando a descrição do problema
+            2. **Diana Costa** irá clonar o repositório e investigar a causa raiz
+            3. **Thiago Almeida** irá aplicar a correção
+            4. **Camila Ferreira** irá abrir um Pull Request com a correção
+            5. **Bruno Saraiva** irá limpar o ambiente temporário
+
+            Um PR será aberto automaticamente com a correção. Fique de olho nas notificações!
+
+            ---
+            *Gerado automaticamente pela Squad Bug Fix via ExpxAgents*`
+            });
+
+      - name: Comment on Issue (failure)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Falha ao Acionar a Squad
+
+            Houve um problema ao contatar o servidor ExpxAgents (\`http://187.127.4.249:3001\`).
+
+            Por favor, verifique se o servidor está online e tente novamente removendo e readicionando a label **Bug**.
+
+            ---
+            *ExpxAgents Bug Fix Squad*`
+            });
