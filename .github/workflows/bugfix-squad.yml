@@ -40,7 +40,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
             -d "$PAYLOAD" \
-            http://187.127.4.249:3001/api/squads/run)
+            http://187.127.4.249:3001/api/webhooks/bugfix)
 
           echo "HTTP Status: $HTTP_STATUS"
           echo "Response:"
