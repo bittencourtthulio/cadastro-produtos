@@ -33,7 +33,7 @@ export default function App() {
   }
 
   async function handleUpdate(product) {
-    await fetch(`${API}/${editingProduct.id}`, {
+    await fetch(`${API}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product),
