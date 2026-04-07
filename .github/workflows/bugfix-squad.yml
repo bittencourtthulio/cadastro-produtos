@@ -45,18 +45,40 @@ jobs:
             --arg prompt "$PROMPT" \
             '{ "prompt": $prompt }')
 
-          HTTP_STATUS=$(curl -s -o /tmp/squad_response.json -w "%{http_code}" \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD" \
-            http://187.127.4.249:3001/api/webhooks/bugfix-react-express)
+          # Retry com até 3 tentativas (lida com falhas intermittentes de rede)
+          MAX_RETRIES=3
+          RETRY=0
+          SUCCESS=false
 
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response:"
-          cat /tmp/squad_response.json
+          while [ $RETRY -lt $MAX_RETRIES ]; do
+            RETRY=$((RETRY + 1))
+            echo "Tentativa $RETRY de $MAX_RETRIES..."
 
-          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
-            echo "::error::Falha ao acionar a squad. Status HTTP: $HTTP_STATUS"
+            HTTP_STATUS=$(curl -s -o /tmp/squad_response.json -w "%{http_code}" \
+              --connect-timeout 30 \
+              --max-time 60 \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" \
+              http://187.127.4.249:3001/api/webhooks/bugfix-react-express)
+
+            echo "HTTP Status: $HTTP_STATUS"
+            echo "Response:"
+            cat /tmp/squad_response.json
+
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              SUCCESS=true
+              break
+            fi
+
+            if [ $RETRY -lt $MAX_RETRIES ]; then
+              echo "Falhou. Aguardando 10s antes de tentar novamente..."
+              sleep 10
+            fi
+          done
+
+          if [ "$SUCCESS" = false ]; then
+            echo "::error::Falha ao acionar a squad após $MAX_RETRIES tentativas. Último status: $HTTP_STATUS"
             exit 1
           fi
 
