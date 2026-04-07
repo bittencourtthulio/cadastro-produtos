@@ -46,7 +46,7 @@ app.put('/api/products/:id', (req, res) => {
 
 // Deletar
 app.delete('/api/products/:id', (req, res) => {
-  const idx = products.findIndex(p => p.id === req.params.id);
+  const idx = products.findIndex(p => p.id === Number(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Produto não encontrado' });
   products.splice(idx, 1);
   res.status(204).send();
