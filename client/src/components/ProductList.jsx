@@ -1,5 +1,5 @@
 export default function ProductList({ products, onEdit, onDelete }) {
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
     return <p>Nenhum produto cadastrado.</p>;
   }
 
