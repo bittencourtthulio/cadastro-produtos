@@ -44,7 +44,7 @@ export default function App() {
 
   async function handleDelete(id) {
     if (!window.confirm('Deletar este produto?')) return;
-    await fetch(`${API}/${id}`, { method: 'DELETE' });
+    fetch(`${API}/${id}`, { method: 'DELETE' });
     fetchProducts();
   }
 
