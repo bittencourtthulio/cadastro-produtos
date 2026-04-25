@@ -10,10 +10,6 @@ export default function ProductForm({ onSubmit, editingProduct, onCancel }) {
       setName(editingProduct.name);
       setPrice(editingProduct.price);
       setStock(editingProduct.stock);
-    } else {
-      setName('');
-      setPrice('');
-      setStock('');
     }
   }, [editingProduct]);
 
@@ -21,9 +17,6 @@ export default function ProductForm({ onSubmit, editingProduct, onCancel }) {
     e.preventDefault();
     if (!name || price === '' || stock === '') return;
     onSubmit({ name, price: Number(price), stock: Number(stock) });
-    setName('');
-    setPrice('');
-    setStock('');
   }
 
   return (
